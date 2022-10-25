@@ -1,3 +1,5 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Disables INFO logs
 import tensorflow as tf
 import keras
 from keras.applications.resnet import ResNet50
@@ -46,16 +48,16 @@ def maptd_model(input_size=512):
     x = keras.layers.BatchNormalization(**BN_PARAMS)(x)
     x = keras.layers.Activation('relu')(x)
 
-    prediction = keras.layers.Conv2D(1, 1, activation='sigmoid', 
-        name='prediction_vector')(x)
-    rbox_scale = input_size
-    rbox_vector = rbox_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
-        name='region_box_vector')(x)
-    angle_factor = 2 #NOTE: Factor to multiply by the angle vector, because 
+    predictions = keras.layers.Conv2D(1, 1, activation='sigmoid', 
+        name='predictions_vector')(x)
+    rboxes_scale = input_size
+    rboxes = rboxes_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
+        name='region_boxes_vector')(x)
+    angles_factor = 2 # NOTE: Factor to multiply by the angles vector, because 
     # the codomain of tf.atan belongs to (-pi, pi) (see next line)
-    angle = angle_factor * keras.layers.Conv2D(1, 1, activation=tf.atan, 
-        name='angle_vector')(x)
-    geometry_vector = keras.layers.Concatenate()([rbox_vector, angle])
+    angles = angles_factor * keras.layers.Conv2D(1, 1, activation=tf.atan, 
+        name='angles_vector')(x)
+    geometry = keras.layers.Concatenate(name='geometry_vector')([rboxes, angles])
 
-    return keras.Model(inputs=inputs, outputs=[prediction, geometry_vector])
+    return keras.Model(inputs=inputs, outputs=[predictions, geometry])
     
