@@ -46,7 +46,7 @@ def get_angle ( line_segment ):
     return angle, cos_sin
 
 
-def shrink_rect( rect, shrink_ratio=0.3 ):
+def shrink_rect( rect, shrink_ratio=1.0 ): # NOTE by Gerasimos: Ichanged 0.3 to 1.0 to check
     """ Shrink the edges of a rectangle by a fixed relative factor. The
         effect should be equivalent to scaling the height and width of a
         rotated box represented as a center, size, and rotated angle.
