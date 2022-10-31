@@ -110,7 +110,7 @@ def render_boxes(image, boxes):
        boxes: the boxes that correspond to the image
               a box is a list of four corner vertex pairs
     """
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots(1, figsize=(10,10))
     ax.set_aspect('equal')
     ax.imshow(image)
     for n in range(len(boxes)):
