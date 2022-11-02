@@ -46,7 +46,7 @@ def get_angle ( line_segment ):
     return angle, cos_sin
 
 
-def shrink_rect( rect, shrink_ratio=0.3): # NOTE by Gerasimos: Ichanged 0.3 to 1.0 to check
+def shrink_rect( rect, shrink_ratio=0.3): 
     """ Shrink the edges of a rectangle by a fixed relative factor. The
         effect should be equivalent to scaling the height and width of a
         rotated box represented as a center, size, and rotated angle.
@@ -97,7 +97,7 @@ def dist_to_line(p0, p1, points):
     """ Calculate the distance of points to the line segment <p0,p1> """
     norm1 = norm( p1-p0 )
     if norm1 == 0:
-        print(p0, p1) #NOTE: Gerasimos wrote the "print" as a function, it was a decorator (python 2)
+        print(p0, p1) # NOTE: Gerasimos wrote the "print" as a function, it was a decorator (python 2)
         norm1 = 1.0
     return np.abs( np.cross(p1-p0, points-p0) / norm1 )
 
@@ -125,7 +125,6 @@ def generate(image_size, rects):
 
     # ---------------------------------------------------------------------------
     # Set up return values 
-    
     # Where a given rectangle is located
     rect_mask = np.zeros( image_size, dtype=np.uint8) 
 
@@ -143,9 +142,9 @@ def generate(image_size, rects):
 
     for r in range(rects.shape[2]):
         rect = rects[:,:,r]
+
         # Shrink the rectangle, and put in a fillPoly-friendly format
         shrunk_rect = shrink_rect( rect ).astype(np.int32)[np.newaxis,:,:]
-
         
         # Set ground truth pixels to detect
         cv2.fillPoly(score_map, shrunk_rect, 1) 
@@ -162,6 +161,7 @@ def generate(image_size, rects):
         #    cv2.fillPoly(training_mask, 
         #                 rect.astype(np.int32)[np.newaxis, :, :], 0)
 
+        
         yx_in_shrunk_rect = np.argwhere( rect_mask == 1 )
         xy_in_shrunk_rect = yx_in_shrunk_rect[:,::-1]
         rows = yx_in_shrunk_rect[:,0]
@@ -201,3 +201,5 @@ def generate(image_size, rects):
     return  score_map[::4,::4, np.newaxis].astype(np.float32), \
         geo_map[::4,::4,:], \
         training_mask[::4,::4, np.newaxis].astype(np.float32)
+
+        
