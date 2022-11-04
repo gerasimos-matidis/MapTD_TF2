@@ -105,7 +105,7 @@ def dist_to_line(p0, p1, points):
         norm1 = 1.0
     return np.abs( np.cross(p1-p0, points-p0) / norm1 )
 
-def generate(image_size, rects):
+def generate(image_size, rectangles):
     """ Generate the label maps for training from the preprocessed rectangles 
         intersecting the cropped subimage. 
 
@@ -138,4 +138,18 @@ def generate(image_size, rects):
     geo_map = np.zeros( [image_size[0],image_size[1],5], dtype=np.float32)
 
     # Which pixels are used or ignored during training. Initially 2 (unknown)
-    training_mask = 2 * np.ones( image_size, dtype=np.uint8 )
+    training_mask = np.ones( [image_size[0], image_size[1], 1], dtype=np.uint8 )
+
+    shrunk_rectangles = np.zeros_like(rectangles)
+    for i, rect in enumerate(rectangles):
+        # Shrink the rectangle, and put in a fillPoly-friendly format
+        shrunk_rectangles[i] = shrink_rect(rect)
+       
+    # Set ground truth pixels to detect
+    score_map = cv2.fillPoly(score_map, pts=shrunk_rectangles.astype(np.int32), color=1)
+
+    cv2.fillPoly(training_mask, pts=rectangles.astype(np.int32), color=0)
+    cv2.fillPoly(training_mask, pts=shrunk_rectangles.astype(np.int32), color=1)
+
+
+    return np.expand_dims(score_map[::4, ::4], axis=-1), training_mask[::4, ::4, :]
