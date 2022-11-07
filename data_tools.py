@@ -43,7 +43,7 @@ def parse_boxes_from_json(filename,slice_first=False):
     points = list()
     labels = list()
     
-    with open(filename) as fd:
+    with open(filename, encoding='utf-8') as fd: # NOTE: Gerasimos added the encoding parameter
         data = json.load(fd)
 
     for entry in data:
