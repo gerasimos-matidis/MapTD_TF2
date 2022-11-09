@@ -27,6 +27,7 @@ import tiling
 
 from shapely.geometry.polygon import Polygon
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Disables INFO logs
 
 def _generate_tiles(tile_size,image_files,gt_files):
     """
@@ -54,7 +55,7 @@ def _generate_tiles(tile_size,image_files,gt_files):
                      for fname in gt_files ]
     groundtruth_points = [ gt[0] for gt in groundtruths]
     groundtruth_polys  = [ gt[1] for gt in groundtruths]
-    groundtruth_labels = [ gt[2] for gt in groundtruths] # NB: Currently unused
+    groundtruth_labels = [ gt[2] for gt in groundtruths] # NOTE: Currently unused
 
     while True:
         try:
@@ -151,14 +152,15 @@ def get_dataset(image_path, gt_path, file_patterns,
     # (rather than the whole image)
     
 
-    """
+    
     # need to provide (not invoke) a function that returns a generator
     ds = tf.data.Dataset.from_generator (
         generator=lambda : _generate_tiles(tile_size,image_files,gt_files),
         output_types=(tf.float32, tf.float32), 
         output_shapes=(tf.TensorShape([tile_size, tile_size, 3]), 
                        tf.TensorShape([4, 2, None])))
-    
+
+
     # Calculate the output targets for the ground truths
     ds = ds.apply(
         tf.data.experimental.map_and_batch (
@@ -169,7 +171,7 @@ def get_dataset(image_path, gt_path, file_patterns,
                 Tout = [tf.float32, tf.float32, tf.float32, tf.float32] ), 
             batch_size )
     )
-
+    """
     # Pack the results to feat_dict,labels for the Estimator, 
     # explicitly giving tile shape for downstream model (keras resnet),
     # otherwise the shape is unknown
@@ -182,6 +184,8 @@ def get_dataset(image_path, gt_path, file_patterns,
 
     ds = ds.prefetch(prefetch_buffer_size)
     """
+
+    
 
 
     return ds
