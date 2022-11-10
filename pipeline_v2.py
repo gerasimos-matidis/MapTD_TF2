@@ -27,7 +27,7 @@ import tiling
 
 from shapely.geometry.polygon import Polygon
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Disables INFO logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO logs
 
 def _generate_tiles(tile_size,image_files,gt_files):
     """
@@ -169,24 +169,21 @@ def get_dataset(image_path, gt_path, file_patterns,
                 inp  = [ tile, ground_truth, (tile_size, tile_size) ],
                 #       tile        score_map   geo_map     train_mask
                 Tout = [tf.float32, tf.float32, tf.float32, tf.float32] ), 
-            batch_size )
-    )
-    """
+            batch_size ))
+    
     # Pack the results to feat_dict,labels for the Estimator, 
     # explicitly giving tile shape for downstream model (keras resnet),
     # otherwise the shape is unknown
+    """
     ds = ds.map(
         lambda tile, score_map, geo_map, train_mask:
         ({'tile': tf.reshape(tile, [batch_size, tile_size, tile_size, 3]),
           'score_map': score_map,
           'geo_map': geo_map,
           'train_mask': train_mask}, geo_map))
-
+    """    
     ds = ds.prefetch(prefetch_buffer_size)
-    """
-
     
-
 
     return ds
 
