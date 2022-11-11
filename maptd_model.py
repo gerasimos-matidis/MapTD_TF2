@@ -1,5 +1,5 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1' # Disables INFO logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
 import tensorflow as tf
 import keras
 from keras.applications.resnet import ResNet50
@@ -13,6 +13,7 @@ BN_PARAMS = {
     'scale': True,
 }
 
+# Resize the inputs by using bilinear interpolation
 def resize_bln(inputs, resize_factor=2):
     return tf.image.resize(inputs, size=[tf.shape(inputs)[1] * resize_factor, 
         tf.shape(inputs)[2] * resize_factor])
