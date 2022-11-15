@@ -27,7 +27,9 @@ import tiling
 
 from shapely.geometry.polygon import Polygon
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO logs
+from tkinter.filedialog import askdirectory
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
 
 def _generate_tiles(tile_size,image_files,gt_files):
     """
@@ -119,7 +121,67 @@ def _get_filenames(image_path, gt_path, file_patterns, image_ext, gt_ext):
 
     return img_files, gt_files
 
+
+def get_dataset_from_txt_files(dataset_dir, conf_file_dir, mode, image_ext='tiff', 
+                              gt_ext='json', tile_size=512, batch_size=16):
+
+  prefetch_buffer_size = 1 # num of batches to prefetch
+
+  image_dirname = 'images'
+  gt_dirname = gt_ext
+  filename = mode + '.txt'
+  image_files, gt_files = [], []
+  with open(os.path.join(conf_file_dir, filename), 'r') as files_list:
     
+    for file in files_list:
+      file = file.replace('\n', '')
+      image_filepath = os.path.join(dataset_dir, image_dirname, 
+                                    file + '.' + image_ext)
+      image_files.append(image_filepath)
+      
+      gt_filepath = os.path.join(dataset_dir, gt_dirname, 
+                                file + '.' + gt_ext)
+      gt_files.append(gt_filepath)
+
+  # Begin with a generator that produces an image tile and the intersecting
+  # ground truth rectangles, translated to the tile's coordinates
+  # (rather than the whole image)
+    
+  # need to provide (not invoke) a function that returns a generator
+  ds = tf.data.Dataset.from_generator (
+      generator=lambda : _generate_tiles(tile_size,image_files,gt_files),
+      output_types=(tf.float32, tf.float32), 
+      output_shapes=(tf.TensorShape([tile_size, tile_size, 3]), 
+                      tf.TensorShape([4, 2, None])))
+
+
+  # Calculate the output targets for the ground truths
+  ds = ds.apply(
+      tf.data.experimental.map_and_batch (
+          lambda tile, ground_truth: tf.compat.v1.py_func (
+              func = get_targets, 
+              inp  = [ tile, ground_truth, (tile_size, tile_size) ],
+              #       tile        score_map   geo_map     train_mask
+              Tout = [tf.float32, tf.float32, tf.float32, tf.float32] ), 
+          batch_size ))
+  
+  # Pack the results to feat_dict,labels for the Estimator, 
+  # explicitly giving tile shape for downstream model (keras resnet),
+  # otherwise the shape is unknown
+  """
+  ds = ds.map(
+      lambda tile, score_map, geo_map, train_mask:
+      ({'tile': tf.reshape(tile, [batch_size, tile_size, tile_size, 3]),
+        'score_map': score_map,
+        'geo_map': geo_map,
+        'train_mask': train_mask}, geo_map))
+  """    
+  ds = ds.prefetch(prefetch_buffer_size)
+  
+
+  return ds
+
+
 def get_dataset(image_path, gt_path, file_patterns,
                 image_ext='tiff',
                 gt_ext='json',

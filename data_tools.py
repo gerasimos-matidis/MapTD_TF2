@@ -23,8 +23,6 @@ import numpy as np
 import cv2
 from shapely.geometry.polygon import Polygon
 
-
-
 def parse_boxes_from_json(filename,slice_first=False):
     """
     Reads a ground truth file and returns a list, where the first element is
