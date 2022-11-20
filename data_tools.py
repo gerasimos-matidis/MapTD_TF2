@@ -146,7 +146,7 @@ def get_files_from_dir(dir_path):
     
     return sorted(files)
 
-def get_filenames(path,file_patterns,ext):
+def get_filenames(path, file_patterns, ext):
     """
     Construct complete file names from the base path and patterns for
     images
