@@ -238,7 +238,7 @@ def predict(sess, image_file, pyramid_levels, input_images,
 
         image_tiles, shifts = create_tile_set(image, tile_shape)
 
-
+        
         for i in range(len(image_tiles)):
             print('predicting tile',i+1,'of',len(image_tiles))
             tile = image_tiles[i]
@@ -261,6 +261,8 @@ def predict(sess, image_file, pyramid_levels, input_images,
                 # Resize tile boxes to global image coords from pyramid-level
                 tile_boxes[:,:-1] *= (2**level)
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
+
+    """
     print('LANMS...')
     boxes = sort_by_row(boxes) # still ij
     boxes = lanms.merge_quadrangle_n9(boxes.astype('float32'), args.nms_thresh)
@@ -278,6 +280,35 @@ def predict(sess, image_file, pyramid_levels, input_images,
         
     if args.write_images:
         visualize.save_image( image, boxes, output_base)
+
+    """
+
+def predict_v2(image_file, tile_shape, pyramid_levels=1):
+
+    """Use a restored model to detect text in the given image
+
+    Parameters
+       sess          : TensorFlow Session object
+       image_file    : path of the image to run through the model, a string
+       pyramid_levels: number of pyramid levels (decimations) before NMS
+       input_images  : TensorFlow placeholder for image batch
+       f_score       : TensorFlow tensor for model output (cf. model.outputs)
+       f_geometry    : TensorFlow tensor for model output (cf. model.outputs)
+       tile_shape    : tuple (width,height) of the tile size
+    """
+
+    image = cv2.imread(image_file)
+    image = image[:, :, ::-1] # Convert from OpenCV's BGR to RGB
+    boxes = np.zeros((0,9)) # Initialize array to hold resulting detections
+
+    for level in range(pyramid_levels):
+        if level != 0:
+            image = cv2.resize( image, (0,0), fx=0.5, fy=0.5,
+                                interpolation=cv2.INTER_CUBIC )
+
+        image_tiles, shifts = create_tile_set(image, tile_shape)
+    
+    return image_tiles, shifts
     
 
 def restore_model(model):
@@ -296,9 +327,6 @@ def restore_model(model):
     print(latest)
     ckpt = tf.train.Checkpoint(model=model)
     ckpt.restore(latest)
-
-
-
 
 
 def main():
@@ -359,12 +387,15 @@ if __name__ == '__main__':
     args = parser.parse_args()    
     
     model = maptd_model(input_size=args.tile_size_for_the_model)
-    restore_model(model)
+    #restore_model(model)
 
-    image_filenames = get_filenames(
-        args.images_dir, args.filename_pattern, args.images_extension)
+    #image_filenames = get_filenames(
+    #    args.images_dir, args.filename_pattern, args.images_extension)
 
-    score_map, geometry_map = model()
+    image_path = 'D:/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/data/general_dataset/images/D5005-5028149.tiff'
+    image_tiles, shifts = predict_v2(image_path, (args.tile_size, args.tile_size))
+
+    #score_map, geometry_map = model()
 
     #main()
 
