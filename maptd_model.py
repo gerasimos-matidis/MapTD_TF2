@@ -34,7 +34,7 @@ def unpool_block(model, x, conv_filters = None, skip_layer_name=None,
 
     return x
 
-def maptd_model(input_size=512):
+def maptd_model(input_size=None):
     inputs = keras.layers.Input(shape=(input_size, input_size, 3))
     resnet_backbone = ResNet50(input_tensor=inputs, include_top=False)
     x = resnet_backbone.get_layer(index=-1).output
@@ -48,17 +48,17 @@ def maptd_model(input_size=512):
         kernel_regularizer=CONV_REGULARIZER)(x)
     x = keras.layers.BatchNormalization(**BN_PARAMS)(x)
     x = keras.layers.Activation('relu')(x)
-
     predictions = keras.layers.Conv2D(1, 1, activation='sigmoid', 
         name='predictions_vector')(x)
-    rboxes_scale = input_size
+    rboxes_scale = tf.cond(inputs.shape[0] != None, true_fn=lambda: input_size, 
+                            false_fn=lambda: 1)
     rboxes = rboxes_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
         name='region_boxes_vector')(x)
     angles_factor = 2 # NOTE: Factor to multiply by the angles vector, because 
     # the codomain of tf.atan belongs to (-pi, pi) (see next line)
-    angles = angles_factor * keras.layers.Conv2D(1, 1, activation=tf.atan, 
+    angles = angles_factor * keras.layers.Conv2D(1, 1, activation=tf.atan, # NOTE: I changed tf.math.atan to 'sigmoid' just to check
         name='angles_vector')(x)
     geometry = keras.layers.Concatenate(name='geometry_vector')([rboxes, angles])
-
+    
     return keras.Model(inputs=inputs, outputs=[predictions, geometry])
     
