@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.image import non_max_suppression as nms
 
-#import lanms
+import lanms
 #import model
 from maptd_model import maptd_model
 from data_tools import get_filenames
