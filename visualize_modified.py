@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 baseline_color='blue'
 line_color='red'
-box_linewidth=0.5
+box_linewidth=0.2
 
 def load_boxes(filename):
     """
@@ -119,7 +119,6 @@ def render_boxes(image, boxes):
         draw_line( box[1],box[2], line_color)
         draw_line( box[2],box[3], line_color)
         draw_line( box[3],box[0], line_color)
-    plt.show()
 
 
 

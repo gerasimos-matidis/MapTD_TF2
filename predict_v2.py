@@ -1,6 +1,7 @@
 import cv2
 import math
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -300,7 +301,11 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
 
     image = cv2.imread(image_file)
     image = image[:, :, ::-1] # Convert from OpenCV's BGR to RGB
-    image = image[:6144, :7168, :]
+    print('initial_image_shape: ', image.shape)
+    row_crop = image.shape[0] % 1024
+    col_crop = image.shape[1] % 1024
+    image = image[:-row_crop, :-col_crop, :]
+    print('new_image_shape: ', image.shape)
     boxes = np.zeros((0,9)) # Initialize array to hold resulting detections
 
     for level in range(pyramid_levels):
@@ -334,10 +339,25 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 tile_boxes[:,:-1] *= (2**level)
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         
-    sorted_boxes = sort_by_row(boxes) # still ij
-    
 
-    return image_tiles, shifts, boxes, sorted_boxes
+    print('LANMS...')
+    initial_boxes = sort_by_row(boxes) # still ij
+    nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
+
+    scores = nms_output[:,-1]
+    selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
+    selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
+
+    output_base = os.path.join(args.output,
+                            os.path.splitext(
+                                os.path.basename( image_file ))[0] )
+    print('writing output')
+    if boxes is not None:
+        save_boxes_to_file(selected_boxes, scores, output_base)
+        
+    if args.write_images:
+        visualize.save_image( image, boxes, output_base)
+
     
     
 def restore_model(model):
@@ -395,7 +415,7 @@ if __name__ == '__main__':
                         help='Directory for model checkpoints')
     parser.add_argument('--tile_size', default=4096, type=int,
                         help='Tile size for image processing')
-    parser.add_argument('--tile_overlap', default=1024, type=int,
+    parser.add_argument('--tile_overlap', default=2048, type=int,
                         help='Tile overlap for image processing')
     parser.add_argument('--images_dir', type=str,
                         help='Base directory for image training data')
@@ -417,15 +437,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    model = maptd_model(input_size=args.tile_size_for_the_model)
+    #model = maptd_model(input_size=args.tile_size_for_the_model)
     #restore_model(model)
 
     #image_filenames = get_filenames(
     #    args.images_dir, args.filename_pattern, args.images_extension)
 
-    image_path = 'D:/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/data/general_dataset/images/D5005-5028149.tiff'
+    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/D0042-1070009.tiff'
     model = tf.keras.models.load_model(args.model)
-    image_tiles, shifts, boxes, sorted_boxes = predict_v2(model, image_path, (args.tile_size, args.tile_size))
+    predict_v2(model, image_path, (args.tile_size, args.tile_size))
 
     #score_map, geometry_map = model()
 
