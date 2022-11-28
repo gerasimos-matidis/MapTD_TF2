@@ -302,10 +302,14 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
     image = cv2.imread(image_file)
     image = image[:, :, ::-1] # Convert from OpenCV's BGR to RGB
     print('initial_image_shape: ', image.shape)
-    row_crop = image.shape[0] % 1024
-    col_crop = image.shape[1] % 1024
-    image = image[:-row_crop, :-col_crop, :]
-    print('new_image_shape: ', image.shape)
+    row_expansion = 32 - image.shape[0] % 32
+    col_expansion = 32 - image.shape[1] % 32
+    extra_rows = np.zeros((row_expansion, image.shape[1], 3))    
+    image = np.append(image, extra_rows, axis=0)
+    extra_cols = np.zeros((image.shape[0], col_expansion, 3))
+    image = np.append(image, extra_cols, axis=1).astype(int)
+    print('Image shape: ', image.shape)
+    
     boxes = np.zeros((0,9)) # Initialize array to hold resulting detections
 
     for level in range(pyramid_levels):
@@ -358,6 +362,7 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
     if args.write_images:
         visualize.save_image( image, boxes, output_base)
 
+
     
     
 def restore_model(model):
@@ -385,6 +390,7 @@ def main():
     """
     image_filenames = get_filenames(
          args.images_dir, str.split(args.filename_pattern,','), args.image_extension)
+
 
     if not image_filenames:
         print("No matching images. Exiting...")
@@ -443,11 +449,10 @@ if __name__ == '__main__':
     #image_filenames = get_filenames(
     #    args.images_dir, args.filename_pattern, args.images_extension)
 
-    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/D0042-1070009.tiff'
+    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/predictions/D5005-5028149.tiff'
     model = tf.keras.models.load_model(args.model)
     predict_v2(model, image_path, (args.tile_size, args.tile_size))
 
-    #score_map, geometry_map = model()
 
     
 

@@ -34,8 +34,8 @@ def unpool_block(model, x, conv_filters = None, skip_layer_name=None,
 
     return x
 
-def maptd_model(input_size=None):
-    inputs = keras.layers.Input(shape=(input_size, input_size, 3))
+def maptd_model(input_shape=None):
+    inputs = keras.layers.Input(shape=input_shape)
     resnet_backbone = ResNet50(input_tensor=inputs, include_top=False)
     x = resnet_backbone.get_layer(index=-1).output
     for i in range(3):
@@ -50,7 +50,7 @@ def maptd_model(input_size=None):
     x = keras.layers.Activation('relu')(x)
     predictions = keras.layers.Conv2D(1, 1, activation='sigmoid', 
         name='predictions_vector')(x)
-    rboxes_scale = tf.cond(inputs.shape[0] != None, true_fn=lambda: input_size, 
+    rboxes_scale = tf.cond(inputs.shape[0] != None, true_fn=lambda: input_shape[0], 
                             false_fn=lambda: 1)
     rboxes = rboxes_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
         name='region_boxes_vector')(x)
