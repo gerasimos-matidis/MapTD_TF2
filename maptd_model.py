@@ -50,6 +50,10 @@ def maptd_model(input_shape=None):
     x = keras.layers.Activation('relu')(x)
     predictions = keras.layers.Conv2D(1, 1, activation='sigmoid', 
         name='predictions_vector')(x)
+    # NOTE: Not sure about the value of the rboxes_scale. Jerod, in his code, has put
+    # the number 512. I here use the size of the rows of the patch. It is ok when we deal
+    # with square patches. But what happens when we deal with non-square patches 
+    # (e.g. when we predict from overlapping non-square patches).
     rboxes_scale = tf.cond(inputs.shape[0] != None, true_fn=lambda: input_shape[0], 
                             false_fn=lambda: 1)
     rboxes = rboxes_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
