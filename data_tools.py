@@ -110,8 +110,12 @@ def parse_boxes_from_text(filename,slice_first=False):
             p3 = [float(v[4]), float(v[5])]
             p4 = [float(v[6]), float(v[7])]
             verts = np.asarray([p1, p2, p3, p4],dtype=np.float32)
-            label = json.loads(str(v[8]))
-            score = float(v[9]) if len(v)>9 else 0
+            
+            #label = json.loads(str(v[8])) #TODO: Uncomment it
+            #score = float(v[9]) if len(v)>9 else 0 #TODO: Uncomment it
+            label = "" #TODO: Delete it
+            score = 1000 # TODO: Delete it
+            
             
             points.append(verts)
             poly = Polygon(verts)

@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 baseline_color='blue'
 line_color='red'
-box_linewidth=0.2
+box_linewidth=0.4
 
 def load_boxes(filename):
     """
