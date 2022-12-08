@@ -34,7 +34,7 @@ def unpool_block(model, x, conv_filters = None, skip_layer_name=None,
 
     return x
 
-def maptd_model(input_shape=None):
+def maptd_model(input_shape=(None, None, 3)):
     inputs = keras.layers.Input(shape=input_shape)
     resnet_backbone = ResNet50(input_tensor=inputs, include_top=False)
     x = resnet_backbone.get_layer(index=-1).output
@@ -54,8 +54,7 @@ def maptd_model(input_shape=None):
     # the number 512. I here use the size of the rows of the patch. It is ok when we deal
     # with square patches. But what happens when we deal with non-square patches 
     # (e.g. when we predict from overlapping non-square patches).
-    rboxes_scale = tf.cond(inputs.shape[0] != None, true_fn=lambda: input_shape[0], 
-                            false_fn=lambda: 1)
+    rboxes_scale = 512 # NOTE: Must change for training with different Input Shape
     rboxes = rboxes_scale * keras.layers.Conv2D(4, 1, activation='sigmoid', 
         name='region_boxes_vector')(x)
     angles_factor = 2 # NOTE: Factor to multiply by the angles vector, because 
