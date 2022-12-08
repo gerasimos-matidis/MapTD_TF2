@@ -492,7 +492,3 @@ if __name__ == '__main__':
     print('writing output')
     if selected_boxes is not None:
         save_boxes_to_file(selected_boxes, scores, output_base)
-
-
-    
-
