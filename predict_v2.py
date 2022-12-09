@@ -348,10 +348,6 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
-    filepath = os.path.join('./', args.output, 'initial_boxes')
-    np.save(filepath, boxes)
-        
-    """
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
     nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
@@ -369,11 +365,6 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
         
     if args.write_images:
         visualize.save_image( image, boxes, output_base)
-    """
-
-
-
-    
     
 def restore_model(model):
     """Restore model parameters from latest checkpoint within a given session
@@ -391,7 +382,6 @@ def restore_model(model):
     print(latest)
     ckpt = tf.train.Checkpoint(model=model)
     ckpt.restore(latest)
-
 
 def main():
     """
@@ -461,12 +451,12 @@ if __name__ == '__main__':
     
     image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/predictions/D0042-1070009.tiff'
     
-    """
+    
     if args.model:
         model = tf.keras.models.load_model(args.model)
     else:
         from maptd_model import maptd_model
-        model = maptd_model(input_shape=(512, 512, 3))
+        model = maptd_model()
         latest = tf.train.latest_checkpoint(args.checkpoint_dir)
         print(latest)
         ckpt_prefix = os.path.join(args.checkpoint_dir, 'ckpt')
@@ -474,24 +464,7 @@ if __name__ == '__main__':
         ckpt.restore(latest)
 
     predict_v2(model, image_path, (args.tile_size, args.tile_size))
-    """
-    p = './predictions/gan_predictions/detect_thresh_095/initial_boxes.npy'
-    boxes = np.load(p)
-
-    print('LANMS...')
-    initial_boxes = sort_by_row(boxes) # still ij
-    nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
     
-    scores = nms_output[:,-1]
-    selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
-    selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
-
-    output_base = os.path.join(args.output,
-                            os.path.splitext(
-                                os.path.basename( image_path ))[0] )
-    print('writing output')
-    if selected_boxes is not None:
-        save_boxes_to_file(selected_boxes, scores, output_base)
 
 
     
