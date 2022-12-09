@@ -465,7 +465,20 @@ if __name__ == '__main__':
 
     predict_v2(model, image_path, (args.tile_size, args.tile_size))
     
+<<<<<<< HEAD
 
 
     
 
+=======
+    scores = nms_output[:,-1]
+    selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
+    selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
+
+    output_base = os.path.join(args.output,
+                            os.path.splitext(
+                                os.path.basename( image_path ))[0] )
+    print('writing output')
+    if selected_boxes is not None:
+        save_boxes_to_file(selected_boxes, scores, output_base)
+>>>>>>> 2c1a632e4e2b1bf8a4dc042e87eb2abdb1c3f5a5
