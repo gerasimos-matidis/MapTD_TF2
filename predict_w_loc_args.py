@@ -1,14 +1,53 @@
-import tensorflow as tf
-import keras
 import cv2
-import numpy as np
-import argparse
 import math
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
+import argparse
+import numpy as np
+import tensorflow as tf
 from tensorflow.image import non_max_suppression as nms
+from shapely.geometry.polygon import Polygon
 
+
+import lanms
+#import model
 from maptd_model import maptd_model
-#from predict_v2 import create_tile_set, convert_geometry_to_boxes
-from visualize import render_boxes
+from data_tools import get_filenames
+import visualize
+
+from utils import center_crop
+
+def save_boxes_to_file(boxes, scores, output_base):
+    """
+    Save predicted bounding box coordinates and corresponding score
+    to a text file
+
+    In the text file, each line represents one box. If an arbitrary corner 
+    point in boxes is (a_i, b_j), first the a_i's, then the b_j's, then an 
+    empty string, then the score will be listed in the entry for that box.
+
+    Parameters
+       boxes       : a Nx4x2 numpy array of box vertices (N for number of boxes,
+                       4 corners per box, and 2 coordinates per corner)
+       scores      : a Nx1 numpy array of corresponding box scores
+                      (N for the number of boxes)
+       output_base : Path and basename for image-specific box output file 
+                       ('.txt' extension is appended)
+    """
+    res_file = output_base + '.txt'
+
+    print('Saving', len(boxes), 'boxes to', res_file)
+    
+    with open(res_file, 'w') as f:
+        for b in range(np.shape(scores)[0]):
+            box = np.squeeze(boxes[b,:,:])
+            f.write('{},{},{},{},{},{},{},{},"",{}\r\n'.format(
+                box[0, 0], box[0, 1],
+                box[1, 0], box[1, 1],
+                box[2, 0], box[2, 1],
+                box[3, 0], box[3, 1],
+                scores[b]
+            ))
 
 
 def reconstruct_box(point, dist, theta):
@@ -68,9 +107,9 @@ def create_tile_set(image, tile_shape):
                   to the original image
     """
 
-    def tile_ticks( img_sz, tile_sz ):
+    def tile_ticks(img_sz, tile_sz, tile_overlap=2048):
         """ Calculate tile origin points and sizes.
-            Tiles must overlap by at least the args.tile_overlap
+            Tiles must overlap by at least the tile_overlap
         """
         ticks = list()
         sizes = list()
@@ -84,7 +123,7 @@ def create_tile_set(image, tile_shape):
             ticks.append( pos )
             sizes.append( tile_sz )
             
-            next_pos = pos + tile_sz - args.tile_overlap
+            next_pos = pos + tile_sz
 
             if (next_pos + tile_sz) >= img_sz:
                 trunc_tile_sz = img_sz - next_pos
@@ -159,7 +198,30 @@ def convert_geometry_to_boxes(score_map, geo_map, detect_thresh):
     
     return boxes
 
-def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
+
+def sort_by_row(boxes):
+    """Sort the boxes by the row of their center points
+
+    Parameters
+       boxes: an Nx9 numpy array of rectangles and scores in ij order, as given 
+                by convert_geometry_to_boxes
+
+    Returns
+       boxes: modification of input boxes so that the centers are sorted in
+               increasing row order
+    """
+    # Calculate the row of the center of each rectangle
+    # (geometrically, the mean of the vertices)
+    center_rows = np.mean(boxes[:,[0,2,4,6]],axis=1) 
+    # Extract the indices of the centers in sorted order
+    center_rows_argsort = np.argsort(center_rows)
+
+    return boxes[center_rows_argsort]
+
+
+def predict_v2(model, image_file, tile_shape=(4096, 4096), tile_overlap=2048,
+                detect_thresh=0.95, nms_thresh=0.1,
+                pyramid_levels=1):
 
     """Use a restored model to detect text in the given image
 
@@ -174,8 +236,18 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
     """
 
     image = cv2.imread(image_file)
+
     image = image[:, :, ::-1] # Convert from OpenCV's BGR to RGB
-    image = image[:6144, :7168, :]
+    
+    print('initial_image_shape: ', image.shape)
+    row_expansion = 32 - image.shape[0] % 32
+    col_expansion = 32 - image.shape[1] % 32
+    extra_rows = np.zeros((row_expansion, image.shape[1], 3))    
+    image = np.append(image, extra_rows, axis=0)
+    extra_cols = np.zeros((image.shape[0], col_expansion, 3))
+    image = np.append(image, extra_cols, axis=1).astype(int)
+    print('New image shape: ', image.shape)
+    
     boxes = np.zeros((0,9)) # Initialize array to hold resulting detections
 
     for level in range(pyramid_levels):
@@ -195,7 +267,7 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
             tile_boxes = convert_geometry_to_boxes(
                 score_map=score,
                 geo_map=geometry,
-                detect_thresh=args.detect_thresh)
+                detect_thresh=detect_thresh)
 
             if len(tile_boxes) != 0:
                 # Shift boxes to global image coords from tile-specific coords
@@ -208,59 +280,30 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 # Resize tile boxes to global image coords from pyramid-level
                 tile_boxes[:,:-1] *= (2**level)
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
+        print('Number of initially detected boxes: ', boxes.shape[0])
 
-    #idx_by_score = tf.argsort(boxes[:, -1], axis=-1, direction='DESCENDING')
-    #sorted_boxes = boxes[idx_by_score]
-    """
-    selected_indices = tf.image.non_max_suppression(boxes[:, [0, 1, 5, 6]], 
-                                                    boxes[:, -1], 100000, 
-                                                    iou_threshold=0.5, 
-                                                    score_threshold=0.7)
-
-    final_boxes = boxes[selected_indices]  
-    """
-    return boxes
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--model', type=str,
-                        help='Directory where the trained model is')
-    parser.add_argument('--checkpoint_dir', type=str,
-                        help='Directory for model checkpoints')
-    parser.add_argument('--tile_size', default=4096, type=int,
-                        help='Tile size for image processing')
-    parser.add_argument('--tile_overlap', default=2048, type=int,
-                        help='Tile overlap for image processing')
-    parser.add_argument('--images_dir', type=str,
-                        help='Base directory for image training data')
-    parser.add_argument('--images_extension', default='tiff', type=str,
-                        help='The extension of the image files')
-    parser.add_argument('--filename_pattern', type=str, default='*',
-                        help='File pattern for input data')
-    parser.add_argument('--output', type=str,
-                        help='Directory in which to write prediction output')
-    parser.add_argument('--write_images', default=False, type=bool,
-                        help='Save images of predictions')
-    parser.add_argument('--detect_thresh', default=0.5, type=float,
-                        help='Threshold for rectangle detection')
-    parser.add_argument('--nms_thresh', default=0.5, type=float,
-                        help='Threshold for non-maximal suppression')
-    parser.add_argument('--pyramid_levels', default=1, type=int,
-                        help='Number of image pyramid levels')
-    parser.add_argument('--tile_size_for_the_model', default=512, type=int) # NOTE: I must change the name
-
-    args = parser.parse_args()    
+    print('LANMS...')
+    initial_boxes = sort_by_row(boxes) # still ij
+    nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), nms_thresh)
     
-    model = maptd_model(input_size=args.tile_size_for_the_model)
-    #restore_model(model)
+    scores = nms_output[:,-1]
+    selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
+    selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
+    labels = [""] * selected_boxes.shape[0]
 
-    #image_filenames = get_filenames(
-    #    args.images_dir, args.filename_pattern, args.images_extension)
+    polygons = []
+    for box in selected_boxes:
+        p1 = [box[0, 0], box[0, 1]]
+        p2 = [box[1, 0], box[1, 1]]
+        p3 = [box[2, 0], box[2, 1]]
+        p4 = [box[3, 0], box[3, 1]]
+        verts = np.asarray([p1, p2, p3, p4],dtype=np.float32)
+        poly = Polygon(verts)
+        polygons.append(poly)
+    
+    return {'polygons' : polygons,
+            'labels'   : labels,
+            'scores'   : scores }
 
-    image_path = 'D:/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/data/general_dataset/images/D5005-5028149.tiff'
-    model = tf.keras.models.load_model(args.model)
-    boxes = predict_v2(model, image_path, (args.tile_size, args.tile_size))
 
-    #score_map, geometry_map = model()
+    
