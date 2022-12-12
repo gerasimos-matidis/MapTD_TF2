@@ -285,25 +285,31 @@ def predict_v2(model, image_file, tile_shape=(4096, 4096), tile_overlap=2048,
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
     nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), nms_thresh)
+    if nms_output.shape[0] == 0:
+        return {'polygons' : [], 
+                'labels'   : [], 
+                'scores'   : []}
     
-    scores = nms_output[:,-1]
-    selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
-    selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
-    labels = [""] * selected_boxes.shape[0]
+    else:
 
-    polygons = []
-    for box in selected_boxes:
-        p1 = [box[0, 0], box[0, 1]]
-        p2 = [box[1, 0], box[1, 1]]
-        p3 = [box[2, 0], box[2, 1]]
-        p4 = [box[3, 0], box[3, 1]]
-        verts = np.asarray([p1, p2, p3, p4],dtype=np.float32)
-        poly = Polygon(verts)
-        polygons.append(poly)
-    
-    return {'polygons' : polygons,
-            'labels'   : labels,
-            'scores'   : scores }
+        scores = nms_output[:,-1]
+        selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
+        selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
+        labels = [""] * selected_boxes.shape[0]
+
+        polygons = []
+        for box in selected_boxes:
+            p1 = [box[0, 0], box[0, 1]]
+            p2 = [box[1, 0], box[1, 1]]
+            p3 = [box[2, 0], box[2, 1]]
+            p4 = [box[3, 0], box[3, 1]]
+            verts = np.asarray([p1, p2, p3, p4],dtype=np.float32)
+            poly = Polygon(verts)
+            polygons.append(poly)
+        
+        return {'polygons' : polygons,
+                'labels'   : labels,
+                'scores'   : scores }
 
 
-    
+        
