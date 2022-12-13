@@ -16,7 +16,7 @@
 
 # visualize.py -- Utilities for drawing boxes on a given image and saving the
 #   result as a raster. Displays result as a command-line program, e.g.,
-#     python visualize.py image_file box_file
+#     python visualize.py image_file box_file.
 
 import numpy as np
 import os
