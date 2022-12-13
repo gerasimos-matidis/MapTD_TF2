@@ -345,9 +345,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    
-    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/predictions/D0042-1070009.tiff'
-    
+    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/predictions/D5005-5028149.tiff'
     
     if args.model:
         model = tf.keras.models.load_model(args.model)
