@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.image import non_max_suppression as nms
 
-import lanms
+#import lanms
 #import model
 from maptd_model import maptd_model
 from data_tools import get_filenames
@@ -278,6 +278,8 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
+    np.save('./predictions/relu_predictions/detect_05/initial_boxes.npy', boxes)
+    """
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
     nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
@@ -295,6 +297,8 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
         
     if args.write_images:
         visualize.save_image( image, boxes, output_base)
+
+    """
     
 def restore_model(model):
     """Restore model parameters from latest checkpoint within a given session
@@ -345,7 +349,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_path = '/media/gerasimos/Νέος τόμος/Gerasimos/Toponym_Recognition/MapTD_General/MapTD_TF2/predictions/D5005-5028149.tiff'
+    image_path = './predictions/D0042-1070009.tiff'
     
     if args.model:
         model = tf.keras.models.load_model(args.model)
