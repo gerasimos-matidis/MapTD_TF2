@@ -34,7 +34,7 @@ def unpool_block(model, x, conv_filters = None, skip_layer_name=None,
 
     return x
 
-def maptd_model(input_shape=(None, None, 3)):
+def maptd_model(input_shape=(None, None, 3), scoremap_acf='sigmoid'):
     inputs = keras.layers.Input(shape=input_shape)
     resnet_backbone = ResNet50(input_tensor=inputs, include_top=False)
     x = resnet_backbone.get_layer(index=-1).output
@@ -48,7 +48,7 @@ def maptd_model(input_shape=(None, None, 3)):
         kernel_regularizer=CONV_REGULARIZER)(x)
     x = keras.layers.BatchNormalization(**BN_PARAMS)(x)
     x = keras.layers.Activation('relu')(x)
-    predictions = keras.layers.Conv2D(1, 1, activation='sigmoid', 
+    predictions = keras.layers.Conv2D(1, 1, activation=scoremap_acf, 
         name='predictions_vector')(x)
     # NOTE: Not sure about the value of the rboxes_scale. Jerod, in his code, has put
     # the number 512. I here use the size of the rows of the patch. It is ok when we deal
