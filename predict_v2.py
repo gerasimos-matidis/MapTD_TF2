@@ -278,7 +278,8 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
-    np.save('./predictions/relu_predictions/detect_05/initial_boxes.npy', boxes)
+    output_base = os.path.join(args.output, 'D5005-5028149_initial_boxes')
+    save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], output_base)
     """
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
@@ -349,7 +350,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_path = './predictions/D0042-1070009.tiff'
+    image_path = './predictions/D5005-5028149.tiff'
     
     if args.model:
         model = tf.keras.models.load_model(args.model)
