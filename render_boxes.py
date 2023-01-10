@@ -12,6 +12,9 @@ txtpath = askopenfilename(title='Select the .txt file')
 
 img = plt.imread(impath)
 boxes = load_boxes(txtpath)
+
+
+
 render_boxes(img, boxes)
 
 savepath = os.path.join(txtpath.split(os.path.basename(txtpath))[0], 'pred_ims', f'new_{os.path.basename(impath).split(".")[0]}.png')

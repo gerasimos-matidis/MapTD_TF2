@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.image import non_max_suppression as nms
 
-import lanms
+#import lanms
 #import model
 from maptd_model import maptd_model
 from data_tools import get_filenames
@@ -39,7 +39,7 @@ def save_boxes_to_file(boxes, scores, output_base):
     with open(res_file, 'w') as f:
         for b in range(np.shape(scores)[0]):
             box = np.squeeze(boxes[b,:,:])
-            f.write('{},{},{},{},{},{},{},{},"",{}\n'.format(
+            f.write('{},{},{},{},{},{},{},{},"",{}\r\n'.format(
                 box[0, 0], box[0, 1],
                 box[1, 0], box[1, 1],
                 box[2, 0], box[2, 1],
@@ -278,16 +278,11 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
-    
+    output_base = os.path.join(args.output, 'D5005-5028149_initial_boxes')
+    save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], output_base)
+    """
     print('LANMS...')
-    initial_boxes = sort_by_row(boxes) # still ij   
-    
-    scores = boxes[:, -1]
-    boxes = boxes[:, :8].reshape(-1, 4, 2)
-    output_base = os.path.join(args.output, 'D5005-5028097_initial')
-    save_boxes_to_file(boxes, scores, output_base)
-    
-
+    initial_boxes = sort_by_row(boxes) # still ij
     nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
     
     scores = nms_output[:,-1]
@@ -301,11 +296,10 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
     if selected_boxes is not None:
         save_boxes_to_file(selected_boxes, scores, output_base)
         
-    if args.write_images: # NOTE: I think it does't work well
+    if args.write_images:
         visualize.save_image( image, boxes, output_base)
-    
-        
-    
+
+    """
     
 def restore_model(model):
     """Restore model parameters from latest checkpoint within a given session
@@ -356,14 +350,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_path = './data/ckpts/models/2/D5005-5028097.tiff'
+    image_path = './predictions/D5005-5028149.tiff'
     
     if args.model:
         model = tf.keras.models.load_model(args.model)
     else:
         from maptd_model import maptd_model
-        #model = maptd_model()
-        model = maptd_model(scoremap_acf='relu') # NOTE: Be carefull! Usually. You must use the command in the line above.
+        model = maptd_model()
         latest = tf.train.latest_checkpoint(args.checkpoint_dir)
         print(latest)
         ckpt_prefix = os.path.join(args.checkpoint_dir, 'ckpt')

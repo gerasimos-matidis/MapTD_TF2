@@ -22,7 +22,6 @@ import numpy as np
 import os
 import sys
 import matplotlib.pyplot as plt
-import random
 
 baseline_color='blue'
 line_color='red'
@@ -114,12 +113,13 @@ def render_boxes(image, boxes):
     ax.set_aspect('equal')
     ax.imshow(image)
     for n in range(len(boxes)):
-        color = (random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1))
         box = boxes[n]
-        draw_line( box[0],box[1], color)
-        draw_line( box[1],box[2], color)
-        draw_line( box[2],box[3], color)
-        draw_line( box[3],box[0], color)
+        draw_line( box[0],box[1], baseline_color)
+        draw_line( box[1],box[2], line_color)
+        draw_line( box[2],box[3], line_color)
+        draw_line( box[3],box[0], line_color)
+
+
 
 def main(image_path, ground_truth_file):
     """Load and display boxes on an image
