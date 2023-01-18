@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.image import non_max_suppression as nms
 
-#import lanms
+import lanms
 #import model
 from maptd_model import maptd_model
 from data_tools import get_filenames
@@ -278,9 +278,9 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
-    output_base = os.path.join(args.output, 'D5005-5028149_initial_boxes')
-    save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], output_base)
-    """
+    output_base_initial = os.path.join(args.output, image_name + '_initial')
+    save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], output_base_initial)
+    
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
     nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
@@ -289,17 +289,18 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
     selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
     selected_boxes = np.flip(selected_boxes, axis=2) #IMPORTANT ij-xy conversion
 
-    output_base = os.path.join(args.output,
+    output_base_lanms = os.path.join(args.output,
                             os.path.splitext(
                                 os.path.basename( image_file ))[0] )
     print('writing output')
     if selected_boxes is not None:
-        save_boxes_to_file(selected_boxes, scores, output_base)
-        
+        save_boxes_to_file(selected_boxes, scores, output_base_lanms)
+    """ 
     if args.write_images:
         visualize.save_image( image, boxes, output_base)
-
     """
+
+    
     
 def restore_model(model):
     """Restore model parameters from latest checkpoint within a given session
@@ -350,7 +351,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_path = './predictions/D5005-5028149.tiff'
+    image_name = 'D0042-1070010'
+    image_path = os.path.join(args.images_dir, image_name + '.tiff')
     
     if args.model:
         model = tf.keras.models.load_model(args.model)
