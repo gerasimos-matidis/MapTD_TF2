@@ -79,8 +79,14 @@ def main():
       iou_match_thresh=args.iou_thresh)
 
     # Display save the results
-    print(sample_stats)
-    print(total_stats)
+    
+    for key in sample_stats:#.keys():
+      print(key)
+      print(sample_stats[key])
+      print('\n\n')
+    
+    #print(sample_stats)
+    #print(total_stats)
     
     if args.save_result:
       import json

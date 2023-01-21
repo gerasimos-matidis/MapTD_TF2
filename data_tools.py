@@ -104,9 +104,7 @@ def parse_boxes_from_text(filename,slice_first=False):
     
     with open(filename, 'r') as fd:
         for line in fd:
-            #v = line[:-1].split(',')
-            print(line)
-            break
+            v = line[:-1].split(',')
             p1 = [float(v[0]), float(v[1])]
             p2 = [float(v[2]), float(v[3])]
             p3 = [float(v[4]), float(v[5])]
@@ -124,14 +122,13 @@ def parse_boxes_from_text(filename,slice_first=False):
             polygons.append(poly)
             labels.append(label)
             scores.append(score)
-    """
+
     points = np.asarray(points)
     scores = np.asarray(scores)
     if not slice_first:
         points = np.transpose(points, (1, 2, 0)) # Turn Nx4x2 to 4x2xN
 
     return [points, polygons, labels, scores]
-    """
 
 
 def get_files_from_dir(dir_path):
