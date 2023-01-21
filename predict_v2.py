@@ -5,7 +5,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
 import argparse
 import numpy as np
 import tensorflow as tf
-from tensorflow.image import non_max_suppression as nms
 
 import lanms
 #import model
@@ -351,7 +350,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_name = 'D0042-1070010'
+    image_name = 'D0042-1070003'
     image_path = os.path.join(args.images_dir, image_name + '.tiff')
     
     if args.model:

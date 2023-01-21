@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 baseline_color='blue'
 line_color='red'
-box_linewidth=0.2
+box_linewidth=0.1
 
 def load_boxes(filename):
     """
@@ -88,7 +88,7 @@ def save_image(image, boxes, output_base):
     # print 'Saving image as', save_as NOTE: This was the original line
     print('Saving image as', save_as) #NOTE: This is the new line
     #################################
-    plt.savefig(save_as, dpi=1000, bbox_inches='tight')
+    plt.savefig(save_as, dpi=2500, bbox_inches='tight')
 
 
 def render_boxes(image, boxes):

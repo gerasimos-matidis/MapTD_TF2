@@ -13,11 +13,9 @@ txtpath = askopenfilename(title='Select the .txt file')
 img = plt.imread(impath)
 boxes = load_boxes(txtpath)
 
-
-
 render_boxes(img, boxes)
 
-savepath = os.path.join(txtpath.split(os.path.basename(txtpath))[0], 'pred_ims', f'new_{os.path.basename(impath).split(".")[0]}.png')
+savepath = os.path.join(txtpath.split(os.path.basename(txtpath))[0], 'pred_ims', f'new_{os.path.basename(txtpath).split(".")[0]}.png')
 print('Saving the image with the rendered boxes in: ', savepath)
 plt.savefig(savepath, dpi=1000, bbox_inches='tight')
 
