@@ -80,7 +80,7 @@ def main():
 
     # Display save the results
     
-    for key in sample_stats:#.keys():
+    for key in sample_stats:
       print(key)
       print(sample_stats[key])
       print('\n\n')
