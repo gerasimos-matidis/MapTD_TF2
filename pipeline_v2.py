@@ -29,7 +29,7 @@ from shapely.geometry.polygon import Polygon
 
 from tkinter.filedialog import askdirectory
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Disables INFO & WARNING  logs
 
 def _generate_tiles(tile_size,image_files,gt_files):
     """
