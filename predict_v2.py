@@ -10,7 +10,7 @@ import lanms
 #import model
 from maptd_model import maptd_model
 from data_tools import get_filenames
-import visualize
+import old_or_unused.visualize as visualize
 
 from utils import center_crop
 
@@ -277,12 +277,18 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
                 boxes = np.concatenate((boxes, tile_boxes), axis=0)
         print('Number of initially detected boxes: ', boxes.shape[0])
 
-    output_base_initial = os.path.join(args.output, image_name + '_initial')
-    save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], output_base_initial)
+    
+    #output_base_initial = os.path.join(args.output,
+    #                        os.path.splitext(
+    #                            os.path.basename(image_file))[0] + '_initial')
+    #save_boxes_to_file(boxes[:, :8].reshape(-1, 4, 2), boxes[:,-1], 
+    #                output_base_initial)
+    
     
     print('LANMS...')
     initial_boxes = sort_by_row(boxes) # still ij
-    nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), args.nms_thresh)
+    nms_output = lanms.merge_quadrangle_n9(initial_boxes.astype('float32'), 
+                                        args.nms_thresh)
     
     scores = nms_output[:,-1]
     selected_boxes = nms_output[:, :8].reshape(-1, 4, 2)
@@ -290,7 +296,7 @@ def predict_v2(model, image_file, tile_shape, pyramid_levels=1):
 
     output_base_lanms = os.path.join(args.output,
                             os.path.splitext(
-                                os.path.basename( image_file ))[0] )
+                                os.path.basename(image_file))[0] )
     print('writing output')
     if selected_boxes is not None:
         save_boxes_to_file(selected_boxes, scores, output_base_lanms)
@@ -331,7 +337,9 @@ if __name__ == '__main__':
     parser.add_argument('--tile_overlap', default=2048, type=int,
                         help='Tile overlap for image processing')
     parser.add_argument('--images_dir', type=str,
-                        help='Base directory for image training data')
+                        help='Base directory which contains the images')
+    parser.add_argument('--test_images_conf_files', type=str,
+                        help='Base directory which contains the images')
     parser.add_argument('--images_extension', default='tiff', type=str,
                         help='The extension of the image files')
     parser.add_argument('--filename_pattern', type=str, default='*',
@@ -350,18 +358,22 @@ if __name__ == '__main__':
 
     args = parser.parse_args()    
     
-    image_name = 'D0042-1070003'
-    image_path = os.path.join(args.images_dir, image_name + '.tiff')
-    
-    if args.model:
-        model = tf.keras.models.load_model(args.model)
-    else:
-        from maptd_model import maptd_model
-        model = maptd_model()
-        latest = tf.train.latest_checkpoint(args.checkpoint_dir)
-        print(latest)
-        ckpt_prefix = os.path.join(args.checkpoint_dir, 'ckpt')
-        ckpt = tf.train.Checkpoint(model=model)
-        ckpt.restore(latest)
 
-    predict_v2(model, image_path, (args.tile_size, args.tile_size))
+    with open(os.path.join(args.test_images_conf_files, 'validate.txt'), 'r') as test_images:
+        for image_name in test_images.readlines():
+            image_path = os.path.join(args.images_dir, 
+                                    image_name.replace('\n', '') + '.tiff')
+
+            if args.model:
+                model = tf.keras.models.load_model(args.model)
+            else:
+                from maptd_model import maptd_model
+                model = maptd_model()
+                latest = tf.train.latest_checkpoint(args.checkpoint_dir)
+                print(latest)
+                ckpt_prefix = os.path.join(args.checkpoint_dir, 'ckpt')
+                ckpt = tf.train.Checkpoint(model=model)
+                ckpt.restore(latest)
+
+            predict_v2(model, image_path, (args.tile_size, args.tile_size))
+    
