@@ -79,12 +79,12 @@ def main():
       iou_match_thresh=args.iou_thresh)
 
     # Display save the results
-    #for key in sample_stats:#.keys():
-    #  print(key)
-    #  print(sample_stats[key].values())
-    #  print('\n\n')
-    print(total_stats.values())
-
+    
+    for key in sample_stats:#.keys():
+      print(key)
+      print(sample_stats[key])
+      print('\n\n')
+    
     #print(sample_stats)
     #print(total_stats)
     """
